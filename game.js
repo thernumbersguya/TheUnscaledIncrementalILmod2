@@ -1355,7 +1355,7 @@ tab('dimTab');
 scrollNextMessage();
 
 // ==========================================
-// SPEEDRUN MOD HOOKS: COMPLETE LIVESPLIT CORE (25 FPS SYNC)
+// SPEEDRUN MOD HOOKS: PURE VANILLA MIRROR
 // ==========================================
 
 let splitSegments = [
@@ -1443,75 +1443,21 @@ function addCustomSplitSegment() {
     renderLiveSplitLayoutRows();
 }
 
-// Firewall Override: Intercepts the top time element's text changes to block vanilla flashing
-(function protectClockElement() {
-    let clockEl = document.getElementById("timePlayed");
-    if (!clockEl) {
-        setTimeout(protectClockElement, 50);
-        return;
-    }
-    
-    let internalValue = clockEl.innerHTML;
-    Object.defineProperty(clockEl, 'innerHTML', {
-        get: function() {
-            return internalValue;
-        },
-        set: function(newValue) {
-            if (isTimerRunning) {
-                internalValue = formatTimeOutputString(customVirtualTime);
-            } else {
-                internalValue = newValue;
-            }
-            clockEl.innerText = internalValue;
-        },
-        configurable: true
-    });
-})();
-
 function removeCustomSplitSegment(index) {
     splitSegments.splice(index, 1);
     renderLiveSplitLayoutRows();
 }
 
-// ==========================================
-// SPEEDRUN MOD HOOKS: THE FLASHING FIX
-// ==========================================
-
-// To stop the flashing, we completely block the vanilla game from ever touching the "timePlayed" element.
-// Instead, our mod will be the ONLY code allowed to write to it.
-(function blockVanillaClockFlashes() {
-    let clockEl = document.getElementById("timePlayed");
-    if (!clockEl) {
-        setTimeout(blockVanillaClockFlashes, 50);
-        return;
-    }
-    
-    // We rewrite the element's innerHTML behavior so it completely ignores what the vanilla game says.
-    Object.defineProperty(clockEl, 'innerHTML', {
-        get: function() {
-            return formatTimeOutputString(game.frames / 25);
-        },
-        set: function(newValue) {
-            // Treat this setter like a firewall. When the vanilla game loop tries to change the text,
-            // we intercept it, throw its text away, and strictly force our own clean time string!
-            clockEl.innerText = formatTimeOutputString(game.frames / 25);
-        },
-        configurable: true
-    });
-})();
-
-// This simple interval updates our LiveSplit clock box layout smoothly.
+// Mirror game.frames divided by 25 natively to match the 25 FPS clock calculation
 setInterval(() => {
     if (typeof game === 'undefined' || game.frames === undefined) return;
 
-    if (isTimerRunning) {
-        customVirtualTime = game.frames / 25;
+    // Pull directly from the vanilla source without rewriting game variables
+    customVirtualTime = game.frames / 25;
 
-        let clock = document.getElementById("livesplit-main-clock");
-        if (clock) clock.innerHTML = formatTimeOutputString(customVirtualTime);
-    }
+    let clock = document.getElementById("livesplit-main-clock");
+    if (clock && isTimerRunning) clock.innerHTML = formatTimeOutputString(customVirtualTime);
 }, 40); 
-
 
 function executeLiveSplitStep() {
     if (!isTimerRunning && customVirtualTime === 0) {
@@ -1622,49 +1568,7 @@ function loadSavedStyleConfigurations() {
         panel.style.backgroundColor = "#" + liveSplitUISettings.bgColor;
         panel.style.color = "#" + liveSplitUISettings.textColor;
     }
-    if (listContainer) {
-        listContainer.style.maxHeight = liveSplitUISettings.maxHeight + "px";
-    }
-
-    localStorage.setItem("livesplit_mod_config", JSON.stringify(liveSplitUISettings));
-    localStorage.setItem("livesplit_mod_route", JSON.stringify(splitSegments));
-    
-    updateShortcutsHelpTextDisplay();
-    renderLiveSplitLayoutRows();
-}
-
-function loadSavedStyleConfigurations() {
-    let savedStyles = localStorage.getItem("livesplit_mod_config");
-    let savedRoute = localStorage.getItem("livesplit_mod_route");
-    
-    if (savedStyles) {
-        try {
-            liveSplitUISettings = JSON.parse(savedStyles);
-            if(!liveSplitUISettings.splitKey) liveSplitUISettings.splitKey = "Space";
-            if(!liveSplitUISettings.resetKey) liveSplitUISettings.resetKey = "Backspace";
-
-            document.getElementById("cfg-bg-color").value = liveSplitUISettings.bgColor;
-            document.getElementById("cfg-txt-color").value = liveSplitUISettings.textColor;
-            document.getElementById("cfg-list-height").value = liveSplitUISettings.maxHeight;
-        } catch(e) {}
-    }
-    
-    document.getElementById("cfg-split-key").value = liveSplitUISettings.splitKey;
-    document.getElementById("cfg-reset-key").value = liveSplitUISettings.resetKey;
-
-    if (savedRoute) {
-        try { splitSegments = JSON.parse(savedRoute); } catch(e) {}
-    }
-
-    let panel = document.getElementById("livesplit-widget");
-    let listContainer = document.getElementById("splits-list-container");
-    if (panel) {
-        panel.style.backgroundColor = "#" + liveSplitUISettings.bgColor;
-        panel.style.color = "#" + liveSplitUISettings.textColor;
-    }
-    if (listContainer) {
-        listContainer.style.maxHeight = liveSplitUISettings.maxHeight + "px";
-    }
+    if (listContainer) listContainer.style.maxHeight = liveSplitUISettings.maxHeight + "px";
     
     updateShortcutsHelpTextDisplay();
     renderLiveSplitLayoutRows();
@@ -1706,7 +1610,6 @@ function setupHotkeyBindingFieldsListeners() {
     });
 }
 
-// MOVABLE WIDGET LOGIC
 function makeLiveSplitWidgetMovable() {
     let widget = document.getElementById("livesplit-widget");
     let handle = document.getElementById("livesplit-drag-handle");
@@ -1752,7 +1655,6 @@ function makeLiveSplitWidgetMovable() {
     }
 }
 
-// AUTO-START ON RESET HARD HOOKS
 function hookVanillaResetFunctions() {
     if (typeof hardReset === "function") {
         let originalHardReset = hardReset;
@@ -1787,4 +1689,3 @@ window.addEventListener("load", () => {
         hookVanillaResetFunctions();
     }, 400);
 });
-
