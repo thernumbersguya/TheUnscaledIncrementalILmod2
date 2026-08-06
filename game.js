@@ -1353,3 +1353,289 @@ load();
 updateEverything();
 tab('dimTab');
 scrollNextMessage();
+
+// ==========================================
+// SPEEDRUN MOD HOOKS: LIVESPLIT CLONE CORE
+// ==========================================
+
+let splitSegments = [
+    { name: "Discovery", pbTime: 90 },
+    { name: "Antimatter", pbTime: 240 },
+    { name: "Matter", pbTime: 600 }
+];
+
+let currentSplitIndex = 0;
+let isTimerRunning = false;
+let customVirtualTime = 0;
+let lastInterceptedFrame = 0;
+
+let liveSplitUISettings = {
+    bgColor: "000000",
+    textColor: "FFFFFF",
+    maxHeight: 240,
+    splitKey: "Space",       
+    resetKey: "Backspace"    
+};
+
+function renderLiveSplitLayoutRows() {
+    const container = document.getElementById("splits-list-container");
+    if (!container) return;
+    container.innerHTML = "";
+    
+    splitSegments.forEach((segment, index) => {
+        let isCurrent = index === currentSplitIndex && isTimerRunning;
+        let rowBackground = isCurrent ? "linear-gradient(to bottom, #1e5799 0%,#2989d8 50%,#207cca 100%)" : "transparent";
+        let rowTextColor = index === currentSplitIndex && isTimerRunning ? "#ffffff" : "#" + liveSplitUISettings.textColor;
+
+        container.innerHTML += `
+            <div id="split-row-${index}" style="display: flex; justify-content: space-between; align-items: center; padding: 5px 6px; background: ${rowBackground}; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                <span style="font-weight: 600; font-size: 12px; color: ${rowTextColor};">${segment.name}</span>
+                <div style="text-align: right; font-family: monospace; font-size: 12px; font-weight: bold;">
+                    <span id="split-diff-${index}" style="margin-right: 6px; font-size: 11px;"></span>
+                    <span id="split-time-${index}" style="color: ${rowTextColor}; opacity: 0.95;">${formatTimeOutputString(segment.pbTime)}</span>
+                </div>
+            </div>`;
+    });
+
+    refreshEditorRouteWindow();
+}
+
+function refreshEditorRouteWindow() {
+    const editorList = document.getElementById("editor-splits-list");
+    if (!editorList) return;
+    editorList.innerHTML = "";
+    
+    if (splitSegments.length === 0) {
+        editorList.innerHTML = `<span style="color:#666; font-style:italic;">No segments defined.</span>`;
+        return;
+    }
+
+    splitSegments.forEach((segment, index) => {
+        editorList.innerHTML += `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px; padding-bottom:3px; border-bottom:1px solid #222;">
+                <span style="color:#bbb; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; width:120px;">${segment.name} (${formatTimeOutputString(segment.pbTime)})</span>
+                <button onclick="removeCustomSplitSegment(${index})" style="background:#ff3333; color:white; border:none; padding:1px 4px; font-size:9px; cursor:pointer; border-radius:2px;">Remove</button>
+            </div>`;
+    });
+}
+
+function parseInputTimeStringToSeconds(str) {
+    str = str.trim();
+    if (!str) return 0;
+    let blocks = str.split(":").map(v => parseFloat(v) || 0);
+    if (blocks.length === 1) return blocks[0];
+    if (blocks.length === 2) return (blocks[0] * 60) + blocks[1];
+    if (blocks.length === 3) return (blocks[0] * 3600) + (blocks[1] * 60) + blocks[2];
+    return 0;
+}
+
+function addCustomSplitSegment() {
+    const nameInput = document.getElementById("new-split-name");
+    const pbInput = document.getElementById("new-split-pb");
+    let nameVal = nameInput.value.trim();
+    let secondsVal = parseInputTimeStringToSeconds(pbInput.value);
+
+    if (!nameVal || secondsVal <= 0) return;
+
+    splitSegments.push({ name: nameVal, pbTime: secondsVal });
+    nameInput.value = "";
+    pbInput.value = "";
+    renderLiveSplitLayoutRows();
+}
+
+function removeCustomSplitSegment(index) {
+    splitSegments.splice(index, 1);
+    renderLiveSplitLayoutRows();
+}
+
+setInterval(() => {
+    if (typeof game === 'undefined' || game.frames === undefined) return;
+    let tickDelta = game.frames - lastInterceptedFrame;
+
+    if (tickDelta > 0) {
+        lastInterceptedFrame = game.frames;
+
+        if (isTimerRunning) {
+            customVirtualTime = game.frames / 20;
+
+            let clock = document.getElementById("livesplit-main-clock");
+            if (clock) clock.innerHTML = formatTimeOutputString(customVirtualTime);
+
+            let vanillaClock = document.getElementById("timePlayed");
+            if (vanillaClock) vanillaClock.innerHTML = formatTimeOutputString(customVirtualTime);
+        }
+    }
+}, 50);
+
+function executeLiveSplitStep() {
+    if (!isTimerRunning && customVirtualTime === 0) {
+        if (splitSegments.length === 0) return;
+        isTimerRunning = true;
+        if (typeof game !== 'undefined') lastInterceptedFrame = game.frames;
+        renderLiveSplitLayoutRows();
+        return;
+    }
+    
+    if (currentSplitIndex >= splitSegments.length) return;
+
+    let segment = splitSegments[currentSplitIndex];
+    let elapsedDelta = customVirtualTime - segment.pbTime;
+    
+    let timeElement = document.getElementById(`split-time-${currentSplitIndex}`);
+    let diffElement = document.getElementById(`split-diff-${currentSplitIndex}`);
+    let prevSegDiff = document.getElementById("prev-seg-diff");
+
+    if (timeElement) timeElement.innerHTML = formatTimeOutputString(customVirtualTime);
+    
+    if (diffElement) {
+        if (elapsedDelta > 0) {
+            diffElement.innerHTML = "+" + elapsedDelta.toFixed(1);
+            diffElement.style.color = "#ff3333";
+            if (prevSegDiff) { prevSegDiff.innerHTML = "+" + elapsedDelta.toFixed(1); prevSegDiff.style.color = "#ff3333"; }
+        } else {
+            diffElement.innerHTML = elapsedDelta.toFixed(1);
+            diffElement.style.color = "#00ff44";
+            if (prevSegDiff) { prevSegDiff.innerHTML = elapsedDelta.toFixed(1); prevSegDiff.style.color = "#00ff44"; }
+        }
+    }
+
+    currentSplitIndex++;
+    if (currentSplitIndex >= splitSegments.length) {
+        isTimerRunning = false;
+        let clock = document.getElementById("livesplit-main-clock");
+        if (clock) clock.style.color = "#4da6ff";
+    } else {
+        renderLiveSplitLayoutRows();
+    }
+}
+
+function fullResetTimerState() {
+    isTimerRunning = false;
+    customVirtualTime = 0;
+    currentSplitIndex = 0;
+    let clock = document.getElementById("livesplit-main-clock");
+    if (clock) { clock.innerHTML = "00:00:00.00"; clock.style.color = "#00ff44"; }
+    let prevSegDiff = document.getElementById("prev-seg-diff");
+    if (prevSegDiff) { prevSegDiff.innerHTML = "-0.0"; prevSegDiff.style.color = "#666"; }
+    renderLiveSplitLayoutRows();
+}
+
+function applyAndSaveStyleConfigurations() {
+    let bgInput = document.getElementById("cfg-bg-color").value.trim().toUpperCase();
+    let txtInput = document.getElementById("cfg-txt-color").value.trim().toUpperCase();
+    let heightInput = parseInt(document.getElementById("cfg-list-height").value) || 240;
+
+    if (/^[0-9A-F]{6}$/.test(bgInput)) liveSplitUISettings.bgColor = bgInput;
+    if (/^[0-9A-F]{6}$/.test(txtInput)) liveSplitUISettings.textColor = txtInput;
+    liveSplitUISettings.maxHeight = heightInput;
+
+    liveSplitUISettings.splitKey = document.getElementById("cfg-split-key").value || "Space";
+    liveSplitUISettings.resetKey = document.getElementById("cfg-reset-key").value || "Backspace";
+
+    let panel = document.getElementById("livesplit-widget");
+    let listContainer = document.getElementById("splits-list-container");
+    if (panel) {
+        panel.style.backgroundColor = "#" + liveSplitUISettings.bgColor;
+        panel.style.color = "#" + liveSplitUISettings.textColor;
+    }
+    if (listContainer) listContainer.style.maxHeight = listContainer.style.maxHeight + "px";
+
+    localStorage.setItem("livesplit_mod_config", JSON.stringify(liveSplitUISettings));
+    localStorage.setItem("livesplit_mod_route", JSON.stringify(splitSegments));
+    
+    updateShortcutsHelpTextDisplay();
+    renderLiveSplitLayoutRows();
+}
+
+function loadSavedStyleConfigurations() {
+    let savedStyles = localStorage.getItem("livesplit_mod_config");
+    let savedRoute = localStorage.getItem("livesplit_mod_route");
+    
+    if (savedStyles) {
+        try {
+            liveSplitUISettings = JSON.parse(savedStyles);
+            if(!liveSplitUISettings.splitKey) liveSplitUISettings.splitKey = "Space";
+            if(!liveSplitUISettings.resetKey) liveSplitUISettings.resetKey = "Backspace";
+
+            document.getElementById("cfg-bg-color").value = liveSplitUISettings.bgColor;
+            document.getElementById("cfg-txt-color").value = liveSplitUISettings.textColor;
+            document.getElementById("cfg-list-height").value = liveSplitUISettings.maxHeight;
+        } catch(e) {}
+    }
+    
+    document.getElementById("cfg-split-key").value = liveSplitUISettings.splitKey;
+    document.getElementById("cfg-reset-key").value = liveSplitUISettings.resetKey;
+
+    if (savedRoute) {
+        try { splitSegments = JSON.parse(savedRoute); } catch(e) {}
+    }
+
+    let panel = document.getElementById("livesplit-widget");
+    let listContainer = document.getElementById("splits-list-container");
+    if (panel) {
+        panel.style.backgroundColor = "#" + liveSplitUISettings.bgColor;
+        panel.style.color = "#" + liveSplitUISettings.textColor;
+    }
+    if (listContainer) listContainer.style.maxHeight = liveSplitUISettings.maxHeight + "px";
+    
+    updateShortcutsHelpTextDisplay();
+    renderLiveSplitLayoutRows();
+}
+
+function updateShortcutsHelpTextDisplay() {
+    let helpBanner = document.getElementById("livesplit-shortcuts-help");
+    if (helpBanner) {
+        helpBanner.innerHTML = `Start/Split: ${liveSplitUISettings.splitKey} | Reset: ${liveSplitUISettings.resetKey}`;
+    }
+}
+
+function formatTimeOutputString(totalSecs) {
+    let hh = Math.floor(totalSecs / 3600).toString().padStart(2, '0');
+    let mm = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
+    let ss = Math.floor(totalSecs % 60).toString().padStart(2, '0');
+    let ms = Math.floor((totalSecs % 1) * 100).toString().padStart(2, '0');
+    return hh + ":" + mm + ":" + ss + "." + ms;
+}
+
+function setupHotkeyBindingFieldsListeners() {
+    ['cfg-split-key', 'cfg-reset-key'].forEach(fieldId => {
+        let el = document.getElementById(fieldId);
+        if (!el) return;
+        el.addEventListener("click", function() {
+            this.value = "Press any key...";
+            this.style.background = "#333";
+            
+            const captureHandler = (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                let structuralKeyName = event.code.replace("Key", "").replace("Digit", "");
+                this.value = structuralKeyName;
+                this.style.background = "#222";
+                window.removeEventListener("keydown", captureHandler, true);
+            };
+            window.addEventListener("keydown", captureHandler, true);
+        });
+    });
+}
+
+window.addEventListener("keydown", (e) => {
+    if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+
+    let systemKeyStroke = e.code.replace("Key", "").replace("Digit", "");
+    
+    if (systemKeyStroke === liveSplitUISettings.splitKey || e.code === liveSplitUISettings.splitKey) {
+        e.preventDefault();
+        executeLiveSplitStep();
+    }
+    if (systemKeyStroke === liveSplitUISettings.resetKey || e.code === liveSplitUISettings.resetKey) {
+        e.preventDefault();
+        fullResetTimerState();
+    }
+});
+
+window.addEventListener("load", () => {
+    setTimeout(() => {
+        loadSavedStyleConfigurations();
+        setupHotkeyBindingFieldsListeners();
+    }, 400);
+});
