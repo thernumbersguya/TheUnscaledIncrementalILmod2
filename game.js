@@ -1474,25 +1474,44 @@ function removeCustomSplitSegment(index) {
 }
 
 // ==========================================
-// SPEEDRUN MOD HOOKS: DIRECT VANILLA CLOCK MIRROR
+// SPEEDRUN MOD HOOKS: THE FLASHING FIX
 // ==========================================
 
-// Updates your LiveSplit clone clocks to match the exact in-game frames tracker
+// To stop the flashing, we completely block the vanilla game from ever touching the "timePlayed" element.
+// Instead, our mod will be the ONLY code allowed to write to it.
+(function blockVanillaClockFlashes() {
+    let clockEl = document.getElementById("timePlayed");
+    if (!clockEl) {
+        setTimeout(blockVanillaClockFlashes, 50);
+        return;
+    }
+    
+    // We rewrite the element's innerHTML behavior so it completely ignores what the vanilla game says.
+    Object.defineProperty(clockEl, 'innerHTML', {
+        get: function() {
+            return formatTimeOutputString(game.frames / 25);
+        },
+        set: function(newValue) {
+            // Treat this setter like a firewall. When the vanilla game loop tries to change the text,
+            // we intercept it, throw its text away, and strictly force our own clean time string!
+            clockEl.innerText = formatTimeOutputString(game.frames / 25);
+        },
+        configurable: true
+    });
+})();
+
+// This simple interval updates our LiveSplit clock box layout smoothly.
 setInterval(() => {
     if (typeof game === 'undefined' || game.frames === undefined) return;
 
     if (isTimerRunning) {
-        // Read directly from the original game time calculation to prevent flashing or desync
         customVirtualTime = game.frames / 25;
 
         let clock = document.getElementById("livesplit-main-clock");
         if (clock) clock.innerHTML = formatTimeOutputString(customVirtualTime);
-
-        // Keep the top banner clock updated identically
-        let vanillaClock = document.getElementById("timePlayed");
-        if (vanillaClock) vanillaClock.innerHTML = formatTimeOutputString(customVirtualTime);
     }
-}, 40); // Matches the native 40ms (25 Hz) background execution pulse
+}, 40); 
+
 
 function executeLiveSplitStep() {
     if (!isTimerRunning && customVirtualTime === 0) {
