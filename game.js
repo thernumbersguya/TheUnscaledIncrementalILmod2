@@ -1355,7 +1355,7 @@ tab('dimTab');
 scrollNextMessage();
 
 // ==========================================
-// SPEEDRUN MOD HOOKS: LIVESPLIT CLONE CORE
+// SPEEDRUN MOD HOOKS: FULL REPAIRED LIVESPLIT CORE
 // ==========================================
 
 let splitSegments = [
@@ -1423,9 +1423,9 @@ function parseInputTimeStringToSeconds(str) {
     str = str.trim();
     if (!str) return 0;
     let blocks = str.split(":").map(v => parseFloat(v) || 0);
-    if (blocks.length === 1) return blocks[0];
-    if (blocks.length === 2) return (blocks[0] * 60) + blocks[1];
-    if (blocks.length === 3) return (blocks[0] * 3600) + (blocks[1] * 60) + blocks[2];
+    if (blocks.length === 1) return blocks;
+    if (blocks.length === 2) return (blocks * 60) + blocks;
+    if (blocks.length === 3) return (blocks * 3600) + (blocks * 60) + blocks;
     return 0;
 }
 
@@ -1448,22 +1448,19 @@ function removeCustomSplitSegment(index) {
     renderLiveSplitLayoutRows();
 }
 
+// IN-GAME CLOCK SYNC LOOP
 setInterval(() => {
     if (typeof game === 'undefined' || game.frames === undefined) return;
-    let tickDelta = game.frames - lastInterceptedFrame;
 
-    if (tickDelta > 0) {
-        lastInterceptedFrame = game.frames;
+    if (isTimerRunning) {
+        // Pull linear runtime tracking directly from game framework frames to prevent drift
+        customVirtualTime = game.frames / 20;
 
-        if (isTimerRunning) {
-            customVirtualTime = game.frames / 20;
+        let clock = document.getElementById("livesplit-main-clock");
+        if (clock) clock.innerHTML = formatTimeOutputString(customVirtualTime);
 
-            let clock = document.getElementById("livesplit-main-clock");
-            if (clock) clock.innerHTML = formatTimeOutputString(customVirtualTime);
-
-            let vanillaClock = document.getElementById("timePlayed");
-            if (vanillaClock) vanillaClock.innerHTML = formatTimeOutputString(customVirtualTime);
-        }
+        let vanillaClock = document.getElementById("timePlayed");
+        if (vanillaClock) vanillaClock.innerHTML = formatTimeOutputString(customVirtualTime);
     }
 }, 50);
 
@@ -1538,7 +1535,7 @@ function applyAndSaveStyleConfigurations() {
         panel.style.backgroundColor = "#" + liveSplitUISettings.bgColor;
         panel.style.color = "#" + liveSplitUISettings.textColor;
     }
-    if (listContainer) listContainer.style.maxHeight = listContainer.style.maxHeight + "px";
+    if (listContainer) listContainer.style.maxHeight = liveSplitUISettings.maxHeight + "px";
 
     localStorage.setItem("livesplit_mod_config", JSON.stringify(liveSplitUISettings));
     localStorage.setItem("livesplit_mod_route", JSON.stringify(splitSegments));
@@ -1618,6 +1615,64 @@ function setupHotkeyBindingFieldsListeners() {
     });
 }
 
+// MOVABLE WIDGET LOGIC
+function makeLiveSplitWidgetMovable() {
+    let widget = document.getElementById("livesplit-widget");
+    let handle = document.getElementById("livesplit-drag-handle");
+    if (!widget || !handle) return;
+
+    let posX = 0, posY = 0, mouseX = 0, mouseY = 0;
+
+    let savedTop = localStorage.getItem("livesplit_pos_top");
+    let savedLeft = localStorage.getItem("livesplit_pos_left");
+    if (savedTop) widget.style.top = savedTop;
+    if (savedLeft) widget.style.left = savedLeft;
+
+    handle.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+        
+        e.preventDefault();
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        posX = mouseX - e.clientX;
+        posY = mouseY - e.clientY;
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        
+        widget.style.top = (widget.offsetTop - posY) + "px";
+        widget.style.left = (widget.offsetLeft - posX) + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+        localStorage.setItem("livesplit_pos_top", widget.style.top);
+        localStorage.setItem("livesplit_pos_left", widget.style.left);
+    }
+}
+
+// AUTO-START ON RESET HARD HOOKS
+function hookVanillaResetFunctions() {
+    if (typeof hardReset === "function") {
+        let originalHardReset = hardReset;
+        hardReset = function() {
+            originalHardReset(); 
+            fullResetTimerState(); 
+            executeLiveSplitStep(); 
+        };
+    }
+}
+
 window.addEventListener("keydown", (e) => {
     if (document.activeElement && document.activeElement.tagName === "INPUT") return;
 
@@ -1637,93 +1692,7 @@ window.addEventListener("load", () => {
     setTimeout(() => {
         loadSavedStyleConfigurations();
         setupHotkeyBindingFieldsListeners();
+        makeLiveSplitWidgetMovable();
+        hookVanillaResetFunctions();
     }, 400);
-});
-
-function makeLiveSplitWidgetMovable() {
-    let widget = document.getElementById("livesplit-widget");
-    let handle = document.getElementById("livesplit-drag-handle");
-    if (!widget || !handle) return;
-
-    let posX = 0, posY = 0, mouseX = 0, mouseY = 0;
-
-    // Load previously saved coordinates if available
-    let savedTop = localStorage.getItem("livesplit_pos_top");
-    let savedLeft = localStorage.getItem("livesplit_pos_left");
-    if (savedTop) widget.style.top = savedTop;
-    if (savedLeft) widget.style.left = savedLeft;
-
-    handle.onmousedown = dragMouseDown;
-
-    function dragMouseDown(e) {
-        e = e || window.event;
-        // Ignore clicks if the user is clicking an input field inside customizer
-        if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
-        
-        e.preventDefault();
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-        document.onmouseup = closeDragElement;
-        document.onmousemove = elementDrag;
-    }
-
-    function elementDrag(e) {
-        e = e || window.event;
-        e.preventDefault();
-        posX = mouseX - e.clientX;
-        posY = mouseY - e.clientY;
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-        
-        let targetTop = (widget.offsetTop - posY);
-        let targetLeft = (widget.offsetLeft - posX);
-
-        // Render layout locations
-        widget.style.top = targetTop + "px";
-        widget.style.left = targetLeft + "px";
-    }
-
-    function closeDragElement() {
-        document.onmouseup = null;
-        document.onmousemove = null;
-        // Cache your custom window layout position coordinates down into Local Storage memory profile profiles
-        localStorage.setItem("livesplit_pos_top", widget.style.top);
-        localStorage.setItem("livesplit_pos_left", widget.style.left);
-    }
-}
-
-// Attach the layout positioning listeners inside window load routines
-window.addEventListener("load", () => {
-    setTimeout(makeLiveSplitWidgetMovable, 500);
-});
-
-// ==========================================
-// SPEEDRUN MOD HOOKS: AUTO-START ON RESET
-// ==========================================
-
-function hookVanillaResetFunctions() {
-    // 1. Hook the main Hard Reset function
-    if (typeof hardReset === "function") {
-        let originalHardReset = hardReset;
-        hardReset = function() {
-            originalHardReset(); // Run the game's normal hard reset logic
-            fullResetTimerState(); // Reset our LiveSplit mod variables
-            executeLiveSplitStep(); // Instantly start the clock for the new run
-        };
-    }
-
-    // 2. Hook the Discovery Prestige function (if you want the timer to split/restart on prestige)
-    if (typeof p1 === "function") {
-        let originalP1 = p1;
-        p1 = function() {
-            originalP1(); // Run the game's normal prestige logic
-            // If you want a specific milestone trigger action when pressing this, 
-            // it can be added here.
-        };
-    }
-}
-
-// Initialize the hooks 500ms after startup to make sure the vanilla functions exist first
-window.addEventListener("load", () => {
-    setTimeout(hookVanillaResetFunctions, 500);
 });
