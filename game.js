@@ -1696,3 +1696,34 @@ function makeLiveSplitWidgetMovable() {
 window.addEventListener("load", () => {
     setTimeout(makeLiveSplitWidgetMovable, 500);
 });
+
+// ==========================================
+// SPEEDRUN MOD HOOKS: AUTO-START ON RESET
+// ==========================================
+
+function hookVanillaResetFunctions() {
+    // 1. Hook the main Hard Reset function
+    if (typeof hardReset === "function") {
+        let originalHardReset = hardReset;
+        hardReset = function() {
+            originalHardReset(); // Run the game's normal hard reset logic
+            fullResetTimerState(); // Reset our LiveSplit mod variables
+            executeLiveSplitStep(); // Instantly start the clock for the new run
+        };
+    }
+
+    // 2. Hook the Discovery Prestige function (if you want the timer to split/restart on prestige)
+    if (typeof p1 === "function") {
+        let originalP1 = p1;
+        p1 = function() {
+            originalP1(); // Run the game's normal prestige logic
+            // If you want a specific milestone trigger action when pressing this, 
+            // it can be added here.
+        };
+    }
+}
+
+// Initialize the hooks 500ms after startup to make sure the vanilla functions exist first
+window.addEventListener("load", () => {
+    setTimeout(hookVanillaResetFunctions, 500);
+});
