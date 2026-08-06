@@ -1473,21 +1473,26 @@ function removeCustomSplitSegment(index) {
     renderLiveSplitLayoutRows();
 }
 
-// 25 FPS IN-GAME CLOCK SYNC LOOP
+// ==========================================
+// SPEEDRUN MOD HOOKS: DIRECT VANILLA CLOCK MIRROR
+// ==========================================
+
+// Updates your LiveSplit clone clocks to match the exact in-game frames tracker
 setInterval(() => {
     if (typeof game === 'undefined' || game.frames === undefined) return;
 
     if (isTimerRunning) {
-        // Core Rule: Base elapsed timing checks exactly on 25 updates per second
+        // Read directly from the original game time calculation to prevent flashing or desync
         customVirtualTime = game.frames / 25;
 
         let clock = document.getElementById("livesplit-main-clock");
         if (clock) clock.innerHTML = formatTimeOutputString(customVirtualTime);
 
+        // Keep the top banner clock updated identically
         let vanillaClock = document.getElementById("timePlayed");
         if (vanillaClock) vanillaClock.innerHTML = formatTimeOutputString(customVirtualTime);
     }
-}, 40); // 40ms updates loop matches the 25 Hz engine tick rate pacing perfectly
+}, 40); // Matches the native 40ms (25 Hz) background execution pulse
 
 function executeLiveSplitStep() {
     if (!isTimerRunning && customVirtualTime === 0) {
