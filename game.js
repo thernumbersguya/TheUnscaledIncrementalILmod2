@@ -1639,3 +1639,60 @@ window.addEventListener("load", () => {
         setupHotkeyBindingFieldsListeners();
     }, 400);
 });
+
+function makeLiveSplitWidgetMovable() {
+    let widget = document.getElementById("livesplit-widget");
+    let handle = document.getElementById("livesplit-drag-handle");
+    if (!widget || !handle) return;
+
+    let posX = 0, posY = 0, mouseX = 0, mouseY = 0;
+
+    // Load previously saved coordinates if available
+    let savedTop = localStorage.getItem("livesplit_pos_top");
+    let savedLeft = localStorage.getItem("livesplit_pos_left");
+    if (savedTop) widget.style.top = savedTop;
+    if (savedLeft) widget.style.left = savedLeft;
+
+    handle.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e = e || window.event;
+        // Ignore clicks if the user is clicking an input field inside customizer
+        if (e.target.tagName === "INPUT" || e.target.tagName === "BUTTON") return;
+        
+        e.preventDefault();
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e = e || window.event;
+        e.preventDefault();
+        posX = mouseX - e.clientX;
+        posY = mouseY - e.clientY;
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        
+        let targetTop = (widget.offsetTop - posY);
+        let targetLeft = (widget.offsetLeft - posX);
+
+        // Render layout locations
+        widget.style.top = targetTop + "px";
+        widget.style.left = targetLeft + "px";
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+        // Cache your custom window layout position coordinates down into Local Storage memory profile profiles
+        localStorage.setItem("livesplit_pos_top", widget.style.top);
+        localStorage.setItem("livesplit_pos_left", widget.style.left);
+    }
+}
+
+// Attach the layout positioning listeners inside window load routines
+window.addEventListener("load", () => {
+    setTimeout(makeLiveSplitWidgetMovable, 500);
+});
