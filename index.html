@@ -14,8 +14,9 @@
     No Cost Scaling! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Time played: <span id="timePlayed">0:00:00</span> &nbsp;&nbsp;&nbsp;&nbsp; Best time: <span id="bestTime">1000:00:00</span>
     
     <div id="game">
-        <!-- LIVESPLIT WIDGET -->
+        <!-- ADVANCED LIVESPLIT WIDGET OVERLAY -->
         <div id="livesplit-widget" style="background: #000000; color: #ffffff; border: 1px solid #333; padding: 12px; width: 260px; font-family: 'Segoe UI', Arial, sans-serif; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.9); user-select: none; text-align: left;">
+            <!-- Title Component Block -->
             <div style="border-bottom: 1px solid #222; padding-bottom: 5px; margin-bottom: 6px;">
                 <div style="font-size: 11px; color: #888; font-weight: bold; letter-spacing: 0.5px;">The Unscaled Incremental</div>
                 <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; color: #eee;">
@@ -23,7 +24,9 @@
                     <span style="color: #888;">60</span>
                 </div>
             </div>
+            <!-- Live Splits Grid Area -->
             <div id="splits-list-container" style="max-height: 240px; overflow-y: auto; margin-bottom: 8px; padding-right: 2px;"></div>
+            <!-- Active Grand Master Timer -->
             <div style="border-top: 1px solid #333; padding-top: 6px; text-align: right; position: relative;">
                 <div id="livesplit-main-clock" style="font-size: 34px; font-weight: 700; font-family: monospace; color: #00ff44; letter-spacing: -1px; line-height: 1;">00:00:00.00</div>
                 <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 4px;">
@@ -31,10 +34,12 @@
                     <span id="prev-seg-diff" style="font-weight: bold; font-family: monospace;">-0.0</span>
                 </div>
             </div>
+            <!-- Live Customizer Settings Drawer -->
             <div style="margin-top: 12px; border-top: 1px dashed #444; padding-top: 8px; font-size: 11px; color: #aaa;">
                 <details>
                     <summary style="cursor: pointer; font-weight: bold; color: #ff0055; padding-bottom: 4px;">🎨 LiveSplit Customizer Panel</summary>
                     <div style="display: flex; flex-direction: column; gap: 8px; background: #111; padding: 8px; border-radius: 4px; margin-top: 4px;">
+                        <!-- Sizing Controls Section -->
                         <div style="font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 2px; color: #eee;">Visual Styles</div>
                         <div style="display: flex; justify-content: space-between; font-size: 10px;">
                             <label>BG Hex:</label>
@@ -48,6 +53,19 @@
                             <label>Height (px):</label>
                             <input type="number" id="cfg-list-height" value="240" min="100" style="width: 50px; background: #222; color: #fff; border: 1px solid #444; text-align: center;">
                         </div>
+
+                        <!-- CUSTOM HOTKEYS MAPPING BLOCK -->
+                        <div style="font-weight: bold; border-top: 1px dashed #333; border-bottom: 1px solid #333; padding: 4px 0 2px 0; color: #eee;">Configure Hotkeys</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 10px; align-items: center;">
+                            <label>Split / Start:</label>
+                            <input type="text" id="cfg-split-key" readonly placeholder="Click to bind" style="width: 100px; background: #222; color: #00ff44; border: 1px solid #444; text-align: center; font-size: 10px; padding: 3px; cursor: pointer;">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 10px; align-items: center;">
+                            <label>Reset Run:</label>
+                            <input type="text" id="cfg-reset-key" readonly placeholder="Click to bind" style="width: 100px; background: #222; color: #ff3333; border: 1px solid #444; text-align: center; font-size: 10px; padding: 3px; cursor: pointer;">
+                        </div>
+
+                        <!-- ROUTE EDITING COMPONENT BLOCK -->
                         <div style="font-weight: bold; border-top: 1px dashed #333; border-bottom: 1px solid #333; padding: 4px 0 2px 0; color: #eee; margin-top: 4px;">Edit Route Segments</div>
                         <div style="display: flex; flex-direction: column; gap: 4px;">
                             <input type="text" id="new-split-name" placeholder="Segment Name" style="width: 92%; background: #222; color: #fff; border: 1px solid #444; padding: 3px; font-size: 10px;">
@@ -56,11 +74,14 @@
                                 <button onclick="addCustomSplitSegment()" style="width: 40%; background: #00ff44; color: #000; font-weight: bold; border: none; font-size: 10px; cursor: pointer; border-radius: 2px;">+ Add</button>
                             </div>
                         </div>
+                        <!-- Active segments list container -->
                         <div id="editor-splits-list" style="max-height: 100px; overflow-y: auto; background: #050505; border: 1px solid #222; padding: 4px; font-size: 10px; margin-top: 4px;"></div>
+                        
                         <button onclick="applyAndSaveStyleConfigurations()" style="width: 100%; background: #ff0055; color: #fff; font-weight: bold; border: none; padding: 5px; cursor: pointer; border-radius: 2px; text-transform: uppercase; font-size: 10px; margin-top: 4px;">Save Configuration</button>
                     </div>
                 </details>
             </div>
+            <div id="livesplit-shortcuts-help" style="font-size: 9px; color: #555; text-align: center; margin-top: 6px;">Start/Split: Space | Reset: Backspace</div>
         </div>
         <!-- LIVESPLIT WIDGET END -->
         <div id="news">.</div>
