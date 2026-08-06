@@ -1355,7 +1355,7 @@ tab('dimTab');
 scrollNextMessage();
 
 // ==========================================
-// SPEEDRUN MOD HOOKS: FULL REPAIRED LIVESPLIT CORE
+// SPEEDRUN MOD HOOKS: COMPLETE LIVESPLIT CORE (25 FPS SYNC)
 // ==========================================
 
 let splitSegments = [
@@ -1423,9 +1423,9 @@ function parseInputTimeStringToSeconds(str) {
     str = str.trim();
     if (!str) return 0;
     let blocks = str.split(":").map(v => parseFloat(v) || 0);
-    if (blocks.length === 1) return blocks;
-    if (blocks.length === 2) return (blocks * 60) + blocks;
-    if (blocks.length === 3) return (blocks * 3600) + (blocks * 60) + blocks;
+    if (blocks.length === 1) return blocks[0];
+    if (blocks.length === 2) return (blocks[0] * 60) + blocks[1];
+    if (blocks.length === 3) return (blocks[0] * 3600) + (blocks[1] * 60) + blocks[2];
     return 0;
 }
 
@@ -1443,18 +1443,43 @@ function addCustomSplitSegment() {
     renderLiveSplitLayoutRows();
 }
 
+// Firewall Override: Intercepts the top time element's text changes to block vanilla flashing
+(function protectClockElement() {
+    let clockEl = document.getElementById("timePlayed");
+    if (!clockEl) {
+        setTimeout(protectClockElement, 50);
+        return;
+    }
+    
+    let internalValue = clockEl.innerHTML;
+    Object.defineProperty(clockEl, 'innerHTML', {
+        get: function() {
+            return internalValue;
+        },
+        set: function(newValue) {
+            if (isTimerRunning) {
+                internalValue = formatTimeOutputString(customVirtualTime);
+            } else {
+                internalValue = newValue;
+            }
+            clockEl.innerText = internalValue;
+        },
+        configurable: true
+    });
+})();
+
 function removeCustomSplitSegment(index) {
     splitSegments.splice(index, 1);
     renderLiveSplitLayoutRows();
 }
 
-// IN-GAME CLOCK SYNC LOOP
+// 25 FPS IN-GAME CLOCK SYNC LOOP
 setInterval(() => {
     if (typeof game === 'undefined' || game.frames === undefined) return;
 
     if (isTimerRunning) {
-        // Pull linear runtime tracking directly from game framework frames to prevent drift
-        customVirtualTime = game.frames / 20;
+        // Core Rule: Base elapsed timing checks exactly on 25 updates per second
+        customVirtualTime = game.frames / 25;
 
         let clock = document.getElementById("livesplit-main-clock");
         if (clock) clock.innerHTML = formatTimeOutputString(customVirtualTime);
@@ -1462,7 +1487,7 @@ setInterval(() => {
         let vanillaClock = document.getElementById("timePlayed");
         if (vanillaClock) vanillaClock.innerHTML = formatTimeOutputString(customVirtualTime);
     }
-}, 50);
+}, 40); // 40ms updates loop matches the 25 Hz engine tick rate pacing perfectly
 
 function executeLiveSplitStep() {
     if (!isTimerRunning && customVirtualTime === 0) {
@@ -1573,7 +1598,49 @@ function loadSavedStyleConfigurations() {
         panel.style.backgroundColor = "#" + liveSplitUISettings.bgColor;
         panel.style.color = "#" + liveSplitUISettings.textColor;
     }
-    if (listContainer) listContainer.style.maxHeight = liveSplitUISettings.maxHeight + "px";
+    if (listContainer) {
+        listContainer.style.maxHeight = liveSplitUISettings.maxHeight + "px";
+    }
+
+    localStorage.setItem("livesplit_mod_config", JSON.stringify(liveSplitUISettings));
+    localStorage.setItem("livesplit_mod_route", JSON.stringify(splitSegments));
+    
+    updateShortcutsHelpTextDisplay();
+    renderLiveSplitLayoutRows();
+}
+
+function loadSavedStyleConfigurations() {
+    let savedStyles = localStorage.getItem("livesplit_mod_config");
+    let savedRoute = localStorage.getItem("livesplit_mod_route");
+    
+    if (savedStyles) {
+        try {
+            liveSplitUISettings = JSON.parse(savedStyles);
+            if(!liveSplitUISettings.splitKey) liveSplitUISettings.splitKey = "Space";
+            if(!liveSplitUISettings.resetKey) liveSplitUISettings.resetKey = "Backspace";
+
+            document.getElementById("cfg-bg-color").value = liveSplitUISettings.bgColor;
+            document.getElementById("cfg-txt-color").value = liveSplitUISettings.textColor;
+            document.getElementById("cfg-list-height").value = liveSplitUISettings.maxHeight;
+        } catch(e) {}
+    }
+    
+    document.getElementById("cfg-split-key").value = liveSplitUISettings.splitKey;
+    document.getElementById("cfg-reset-key").value = liveSplitUISettings.resetKey;
+
+    if (savedRoute) {
+        try { splitSegments = JSON.parse(savedRoute); } catch(e) {}
+    }
+
+    let panel = document.getElementById("livesplit-widget");
+    let listContainer = document.getElementById("splits-list-container");
+    if (panel) {
+        panel.style.backgroundColor = "#" + liveSplitUISettings.bgColor;
+        panel.style.color = "#" + liveSplitUISettings.textColor;
+    }
+    if (listContainer) {
+        listContainer.style.maxHeight = liveSplitUISettings.maxHeight + "px";
+    }
     
     updateShortcutsHelpTextDisplay();
     renderLiveSplitLayoutRows();
@@ -1696,3 +1763,4 @@ window.addEventListener("load", () => {
         hookVanillaResetFunctions();
     }, 400);
 });
+
