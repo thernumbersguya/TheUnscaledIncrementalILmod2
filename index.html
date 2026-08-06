@@ -1,110 +1,128 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
-	<head>
-		<!-- <link rel="stylesheet" type="text/css" href="interface.css" /> -->
-		<link rel="stylesheet" type="text/css" href="graphics.css" />
-		<meta charset="utf-8">
-		<title>The Unscaled Incremental</title>
-		<script type="text/javascript" src="OmegaNum.js" defer></script>
-		<script type="text/javascript" src="save.js" defer></script>
+<head>
+    <link rel="stylesheet" type="text/css" href="graphics.css" />
+    <meta charset="utf-8">
+    <title>The Unscaled Incremental</title>
+    <script type="text/javascript" src="OmegaNum.js" defer></script>
+    <script type="text/javascript" src="save.js" defer></script>
     <script type="text/javascript" src="newsticker.js" defer></script>
-		<script type="text/javascript" src="game.js" defer></script>
-    <!-- <script type="text/css" src="graphics.css" defer></script> -->
-	</head>
-
-	
-	<body>
-    <div id = "normal">
-      
-		    No Cost Scaling!  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  Time played: <span id = "timePlayed">0:00:00</span> &nbsp;&nbsp;&nbsp;&nbsp; Best time: <span id = "bestTime">1000:00:00</span>
-        <div id="game">
-            <div id="news">.</div>
+    <script type="text/javascript" src="game.js" defer></script>
+</head>
+<body>
+<div id="normal">
+    No Cost Scaling! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Time played: <span id="timePlayed">0:00:00</span> &nbsp;&nbsp;&nbsp;&nbsp; Best time: <span id="bestTime">1000:00:00</span>
+    
+    <div id="game">
+        <!-- LIVESPLIT WIDGET -->
+        <div id="livesplit-widget" style="background: #000000; color: #ffffff; border: 1px solid #333; padding: 12px; width: 260px; font-family: 'Segoe UI', Arial, sans-serif; margin: 20px auto; box-shadow: 0 10px 25px rgba(0,0,0,0.9); user-select: none; text-align: left;">
+            <div style="border-bottom: 1px solid #222; padding-bottom: 5px; margin-bottom: 6px;">
+                <div style="font-size: 11px; color: #888; font-weight: bold; letter-spacing: 0.5px;">The Unscaled Incremental</div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; color: #eee;">
+                    <span>Any% Speedrun Mod</span>
+                    <span style="color: #888;">60</span>
+                </div>
+            </div>
+            <div id="splits-list-container" style="max-height: 240px; overflow-y: auto; margin-bottom: 8px; padding-right: 2px;"></div>
+            <div style="border-top: 1px solid #333; padding-top: 6px; text-align: right; position: relative;">
+                <div id="livesplit-main-clock" style="font-size: 34px; font-weight: 700; font-family: monospace; color: #00ff44; letter-spacing: -1px; line-height: 1;">00:00:00.00</div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 4px;">
+                    <span>Prev. Segment</span>
+                    <span id="prev-seg-diff" style="font-weight: bold; font-family: monospace;">-0.0</span>
+                </div>
+            </div>
+            <div style="margin-top: 12px; border-top: 1px dashed #444; padding-top: 8px; font-size: 11px; color: #aaa;">
+                <details>
+                    <summary style="cursor: pointer; font-weight: bold; color: #ff0055; padding-bottom: 4px;">🎨 LiveSplit Customizer Panel</summary>
+                    <div style="display: flex; flex-direction: column; gap: 8px; background: #111; padding: 8px; border-radius: 4px; margin-top: 4px;">
+                        <div style="font-weight: bold; border-bottom: 1px solid #333; padding-bottom: 2px; color: #eee;">Visual Styles</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 10px;">
+                            <label>BG Hex:</label>
+                            <input type="text" id="cfg-bg-color" value="000000" maxlength="6" style="width: 50px; background: #222; color: #fff; border: 1px solid #444; text-align: center;">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 10px;">
+                            <label>Text Hex:</label>
+                            <input type="text" id="cfg-txt-color" value="FFFFFF" maxlength="6" style="width: 50px; background: #222; color: #fff; border: 1px solid #444; text-align: center;">
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 10px;">
+                            <label>Height (px):</label>
+                            <input type="number" id="cfg-list-height" value="240" min="100" style="width: 50px; background: #222; color: #fff; border: 1px solid #444; text-align: center;">
+                        </div>
+                        <div style="font-weight: bold; border-top: 1px dashed #333; border-bottom: 1px solid #333; padding: 4px 0 2px 0; color: #eee; margin-top: 4px;">Edit Route Segments</div>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <input type="text" id="new-split-name" placeholder="Segment Name" style="width: 92%; background: #222; color: #fff; border: 1px solid #444; padding: 3px; font-size: 10px;">
+                            <div style="display: flex; gap: 4px;">
+                                <input type="text" id="new-split-pb" placeholder="PB Time (MM:SS)" style="width: 60%; background: #222; color: #fff; border: 1px solid #444; padding: 3px; font-size: 10px;">
+                                <button onclick="addCustomSplitSegment()" style="width: 40%; background: #00ff44; color: #000; font-weight: bold; border: none; font-size: 10px; cursor: pointer; border-radius: 2px;">+ Add</button>
+                            </div>
+                        </div>
+                        <div id="editor-splits-list" style="max-height: 100px; overflow-y: auto; background: #050505; border: 1px solid #222; padding: 4px; font-size: 10px; margin-top: 4px;"></div>
+                        <button onclick="applyAndSaveStyleConfigurations()" style="width: 100%; background: #ff0055; color: #fff; font-weight: bold; border: none; padding: 5px; cursor: pointer; border-radius: 2px; text-transform: uppercase; font-size: 10px; margin-top: 4px;">Save Configuration</button>
+                    </div>
+                </details>
+            </div>
         </div>
-    <br><br><br>
-		
-		
-		<div id="navigateButtons">
-			<button class = "bt" onclick="tab('dimTab')">Null Matter</button>
-			<button class = "b1" id = "disB" onclick="tab('prestigeTab1.1')">Discovery</button>
-      <button class = "b2" id = "dimB2" onclick = "tab('dimTab2')">Antimatter</button>
-      <button class = "b3" id = "dimB3" onclick = "tab('dimTab3')">Matter</button>
-			<button class = "bt" onclick="tab('optionsTab')">Options</button>
-			<button class = "bt" onclick="tab('changelogTab')">Changelog</button>
-		</div>
-		
+        <!-- LIVESPLIT WIDGET END -->
+        <div id="news">.</div>
+    </div>
 
     <br><br><br>
-    <co class = "null0"> You have </co> <co class = "null1"> <span id = "Dn">10</span> </co><co class = "null0"> null matter. </co>
+    <div id="navigateButtons">
+        <button class="bt" onclick="tab('dimTab')">Null Matter</button>
+        <button class="b1" id="disB" onclick="tab('prestigeTab1.1')">Discovery</button>
+        <button class="b2" id="dimB2" onclick="tab('dimTab2')">Antimatter</button>
+        <button class="b3" id="dimB3" onclick="tab('dimTab3')">Matter</button>
+        <button class="bt" onclick="tab('optionsTab')">Options</button>
+        <button class="bt" onclick="tab('changelogTab')">Changelog</button>
+    </div>
     <br><br><br>
-		
     
+    <co class="null0"> You have </co>
+    <co class="null1"> <span id="Dn">10</span> </co>
+    <co class="null0"> null matter. </co>
+    <br><br><br>
     
-    
-		<div id = "dimTab">
-			
-    <button class = "mN" onclick = "Max()">Max all dimensions</button>
-    <br><br>
-    You have <span id = "Dd1">0</span> first dimensions. 
-    <button class = "buy" onclick = "buyD1()">Buy 1</button>
-    <button class = "buyM" onclick = "maxD1()">Buy Max</button> Cost: 10 null matter,  Multiplier: <span id = "Ddm1">1</span>x
-      <br>
-    You have <span id = "Dd2">0</span> second dimensions. 
-    <button class = "buy" onclick = "buyD2()">Buy 1</button>
-    <button class = "buyM" onclick = "maxD2()">Buy Max</button> Cost: 1e10 null matter,  Multiplier: <span id = "Ddm2">1</span>x
-      <br>
-    You have <span id = "Dd3">0</span> third dimensions. 
-    <button class = "buy" onclick = "buyD3()">Buy 1</button>
-    <button class = "buyM" onclick = "maxD3()">Buy Max</button> Cost: E10#2 null matter,  Multiplier: <span id = "Ddm3">1</span>x
-      
-      <br><br><br><br>
-      Automate the clicking of the Max all dimensions button (25/s)<br>
-      <button id = "aup0" class = "aNA" onclick = "buyAu0()">Purchased:<span id = "Dau0">false</span></button> Cost: 1.80e308 null matter<br>
-			
-      
-      
-		</div>
-		<div id = "prestigeTab1.1">
-      
-			Each Discovery Point multiplies each dimension's production by an additive 100% each, before additional boosts.<br>
-      <button id = "resetButton" class = "cp1" onclick = "p1()">Reset your progress for Discovery Points!</button><br>
-      You can get <span id = "DdpP">0</span> Discovery Points if you make a Discovery now.<br><br>
-      <co class = "di0"> You have <co class = "di1"><span id = "Ddp">0</span></co> Discovery Points, giving a <span id = "Dde">0</span>x multiplier to each dimension's production. </co>
-      
-      <br><br><br>
-      Raise the boost from Discovery Points to the power of <span id = "Dru0P">4</span>.<br>
-      <button id = "du01" class = "du1" onclick = "buyRu0()">Buy 1</button> <button id = "du0M" class = "du1" onclick = "buyRu0M()">Buy Max</button> Cost: <span id = "Dru0C">5000</span> Discovery Points<br>
-      Purchased <span id = "Dru0">0</span> times.
-      <br><br>
-      Retroactively add the boost factor of the above upgrade by 2. <br>
-      <button id = "du02" class = "du1" onclick = "buyRu2()"><span id = "Dru2M">Buy</span></button> Cost: <span id = "Dru2C">1e10</span> Discovery Points
-      <br><br><br>
-      Multiply your discovery point gain by log(discovery points).<br>
-      <button id = "du03" class = "du1" onclick = "buyU0()">Purchased: <span id = "Du0">false</span></button> Cost: 1e100 Discovery Points
-      <br><br><br>
-      Make the null matter automation upgrade not be reset on discovery.<br>
-      <button id = "du04" class = "du1" onclick = "buyU1()">Purchased: <span id = "Du1">false</span></button> Cost: 1e200 Discovery Points
-      <br>
-      
-      
-      <div id = "prestigeTab1.2">
-        <br><br><br><br>
-        Buff the matter effect from x to (null matter)^^x.<br>
-        <button id = "du05" class = "du1" onclick = "buyU2()">Purchased: <span id = "Du2">false</span></button> Cost: E1#100 Discovery Points
-        
-        <div id = "prestigeTab1.3">
+    <div id="dimTab">
+        <button class="mN" onclick="Max()">Max all dimensions</button>
+        <br><br>
+        You have <span id="Dd1">0</span> first dimensions. <button class="buy" onclick="buyD1()">Buy 1</button> <button class="buyM" onclick="maxD1()">Buy Max</button> Cost: 10 null matter, Multiplier: <span id="Ddm1">1</span>x <br>
+        You have <span id="Dd2">0</span> second dimensions. <button class="buy" onclick="buyD2()">Buy 1</button> <button class="buyM" onclick="maxD2()">Buy Max</button> Cost: 1e10 null matter, Multiplier: <span id="Ddm2">1</span>x <br>
+        You have <span id="Dd3">0</span> third dimensions. <button class="buy" onclick="buyD3()">Buy 1</button> <button class="buyM" onclick="maxD3()">Buy Max</button> Cost: E10#2 null matter, Multiplier: <span id="Ddm3">1</span>x <br><br><br><br>
+        Automate the clicking of the Max all dimensions button (25/s)<br>
+        <button id="aup0" class="aNA" onclick="buyAu0()">Purchased:<span id="Dau0">false</span></button> Cost: 1.80e308 null matter<br>
+    </div>
+
+    <div id="prestigeTab1.1">
+        Each Discovery Point multiplies each dimension's production by an additive 100% each, before additional boosts.<br>
+        <button id="resetButton" class="cp1" onclick="p1()">Reset your progress for Discovery Points!</button><br>
+        You can get <span id="DdpP">0</span> Discovery Points if you make a Discovery now.<br><br>
+        <co class="di0"> You have <co class="di1"><span id="Ddp">0</span></co> Discovery Points, giving a <span id="Dde">0</span>x multiplier to each dimension's production. </co>
         <br><br><br>
-        Change the antimatter effect from multiplying discovery point gain to tetrating discovery point gain. (Specifically: discovery points are tetrated to (log(antimatter)/3000))<br>
-        <button id = "du06" class = "du1" onclick = "buyU3()">Purchased: <span id = "Du3">false</span></button> Cost: 3^^^3 (about E1#7.6256e12) Discovery Points
-        </div>
+        Raise the boost from Discovery Points to the power of <span id="Dru0P">4</span>.<br>
+        <button id="du01" class="du1" onclick="buyRu0()">Buy 1</button> <button id="du0M" class="du1" onclick="buyRu0M()">Buy Max</button> Cost: <span id="Dru0C">5000</span> Discovery Points<br>
+        Purchased <span id="Dru0">0</span> times. <br><br>
+        Retroactively add the boost factor of the above upgrade by 2. <br>
+        <button id="du02" class="du1" onclick="buyRu2()"><span id="Dru2M">Buy</span></button> Cost: <span id="Dru2C">1e10</span> Discovery Points <br><br><br>
+        Multiply your discovery point gain by log(discovery points).<br>
+        <button id="du03" class="du1" onclick="buyU0()">Purchased: <span id="Du0">false</span></button> Cost: 1e100 Discovery Points <br><br><br>
+        Make the null matter automation upgrade not be reset on discovery.<br>
+        <button id="du04" class="du1" onclick="buyU1()">Purchased: <span id="Du1">false</span></button> Cost: 1e200 Discovery Points <br>
         
-      </div>
-			
-      
-      
-		</div>
-    <div id = "dimTab2">
-      
-      <co class = "di0"> You have <co class = "di2"><span id = "Da">0</span></co> antimatter. </co>
+        <div id="prestigeTab1.2">
+            <br><br><br><br>
+            Buff the matter effect from x to (null matter)^^x.<br>
+            <button id="du05" class="du1" onclick="buyU2()">Purchased: <span id="Du2">false</span></button> Cost: E1#100 Discovery Points
+            
+            <div id="prestigeTab1.3">
+                <br><br><br>
+                Change the antimatter effect from multiplying discovery point gain to tetrating discovery point gain. (Specifically: discovery points are tetrated to (log(antimatter)/3000))<br>
+                <button id="du06" class="du1" onclick="buyU3()">Purchased: <span id="Du3">false</span></button> Cost: 3^^^3 (about E1#7.6256e12) Discovery Points
+            </div>
+        </div>
+    </div>
+
+    <div id="dimTab2">
+        <co class="di0"> You have <co class="di2"><span id="Da">0</span></co> antimatter. </co> <br>
       <br>
       They are <span id = "Dah">multiplying</span> your discovery point gain by <span id = "Dae">1</span>x. <br>
       Formula: 1 + (log(1 + antimatter))^3
